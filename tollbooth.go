@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"fmt"
-	"github.com/didip/tollbooth/errors"
-	"github.com/didip/tollbooth/libstring"
-	"github.com/didip/tollbooth/limiter"
+	"github.com/zhp1254/tollbooth/errors"
+	"github.com/zhp1254/tollbooth/libstring"
+	"github.com/zhp1254/tollbooth/limiter"
 	"math"
 )
 

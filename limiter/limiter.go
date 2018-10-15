@@ -7,7 +7,7 @@ import (
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
-	"golang.org/x/time/rate"
+	rate "github.com/zhp1254/ratelimit/api"
 )
 
 // New is a constructor for Limiter.
@@ -98,8 +98,23 @@ type Limiter struct {
 	tokenBucketExpirationTTL time.Duration
 	basicAuthExpirationTTL   time.Duration
 	headerEntryExpirationTTL time.Duration
+	ltype string
 
 	sync.RWMutex
+}
+
+func (l *Limiter) SetLType(ltype string) *Limiter {
+	l.Lock()
+	l.ltype = ltype
+	l.Unlock()
+
+	return l
+}
+
+func (l *Limiter) GetLType() string {
+	l.RLock()
+	defer l.RUnlock()
+	return l.ltype
 }
 
 // SetTokenBucketExpirationTTL is thread-safe way of setting custom token bucket expiration TTL.
@@ -441,15 +456,15 @@ func (l *Limiter) RemoveHeaderEntries(header string, entriesForRemoval []string)
 }
 
 func (l *Limiter) limitReachedWithTokenBucketTTL(key string, tokenBucketTTL time.Duration) bool {
-	lmtMax := l.GetMax()
 	lmtBurst := l.GetBurst()
+	//lmtMax   := l.GetMax()
 	l.Lock()
 	defer l.Unlock()
 
 	if _, found := l.tokenBuckets.Get(key); !found {
 		l.tokenBuckets.Set(
 			key,
-			rate.NewLimiter(rate.Limit(lmtMax), lmtBurst),
+			rate.NewLimiter(l.ltype, uint(lmtBurst),  tokenBucketTTL),
 			tokenBucketTTL,
 		)
 	}
@@ -459,7 +474,7 @@ func (l *Limiter) limitReachedWithTokenBucketTTL(key string, tokenBucketTTL time
 		return false
 	}
 
-	return !expiringMap.(*rate.Limiter).Allow()
+	return !expiringMap.(rate.Limiter).Allow()
 }
 
 // LimitReached returns a bool indicating if the Bucket identified by key ran out of tokens.
